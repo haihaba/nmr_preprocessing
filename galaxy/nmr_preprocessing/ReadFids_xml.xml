@@ -1,6 +1,5 @@
-<tool id="NMR_Read" name="NMR_Read" version="0.1.0">
+<tool id="NMR_Read" name="NMR_Read" version="3.0.1">
 	<description> Read NMR raw files</description>
-
 	
     <stdio>
         <exit_code range="1:" level="fatal" />
@@ -11,69 +10,72 @@
         Rscript $__tool_directory__/ReadFids_wrapper.R
 
 		## File input
-        #if $inputs.input == "FID":
-            fidzipfile $inputs.fidzipfile
-        #elif $inputs.input == "Jcamp-dx":
-            jcampzipfile $inputs.jcampzipfile
-        #end if
+        fidzipfile $fidzipfile
 		
 		## Title line
 		title_line $title_line
 		
 		## Subdirectories
 		subdirectories $subdirectories
+		
+		## Use subdirectories names as FID names?
+		dirs_names $dirs_names
 
         ## Outputs
-        dataMatrixOut $dataMatrixOut
-        sampleOut $sampleOut
+        dataMatrix $dataMatrix
+        sampleMetadata $sampleMetadata
         logOut $logOut
         graphOut $graphOut
 		
 	</command>
 		
   	<inputs>
-        <conditional name="inputs">
-            <param name="input" type="select" label="Choose your inputs method" >
-                <option value="FID" selected="true"> FID Bruker files</option>
-                <option value="Jcamp-dx"> Jcamp-dx files</option>
-            </param>
-            <when value="FID">
-                <param name="fidzipfile" type="data" format="no_unzip.zip" label="FID file" />
-            </when>
-            <when value="Jcamp-dx">
-                <param name="jcampzipfile" type="data" format="no_unzip.zip" label="Jcamp-dx file" />
-            </when>
-        </conditional>
+		<param name="fidzipfile" type="data" format="no_unzip.zip" label="Bruker FID file" />
         
 		<param name="title_line" label="FID title" type="integer" value="1" size="100" help="Default value is line 1"/>
 
-        <param name="subdirectories" label="Presence of subdirectories" type="select" help="Select 'No' when ...,'Yes' when ... ">
+        <param name="subdirectories" label="Presence of subdirectories?" type="select" help="Select 'FALSE' when there is no subdirectories, 'TRUE' if there are subdirectories">
             <option value="FALSE"> FALSE </option>
             <option value="TRUE"> TRUE </option>
         </param>
-
+        
+        <param name="dirs_names" label="Use (sub)directories names as FID names?" type="select" help="Select 'TRUE' to use the subdirectories names as the FID names">
+            <option value="FALSE"> FALSE </option>
+            <option value="TRUE"> TRUE </option>
+        </param>
 	</inputs>	
+
 	
 	
 	<outputs>
-	
-		<data format="tabular" name="dataMatrixOut" label="${tool.name}_dataMatrixOut" />
-		<data format="tabular" name="sampleOut" label="${tool.name}_sampleMetadataOut" />
+		<data format="tabular" name="dataMatrix" label="${tool.name}_dataMatrix" />
+		<data format="tabular" name="sampleMetadata" label="${tool.name}_sampleMetadata" />
 		<data format="txt" name="logOut" label="${tool.name}_log" />
 		<data format="pdf" name="graphOut" label="${tool.name}_graph" />
-		 
 	</outputs>
 
+
+	<tests>
+        <test>
+          <param name="fidzipfile" value="MTBLS1.zip" ftype="zip" />
+          <param name="title_line" value="1" />
+          <param name="subdirectories" value="TRUE" />
+          <param name="dirs_names" value="TRUE" />
+           
+          <output name="dataMatrix" value="NMR_ReadFids_dataMatrix.tabular" />
+  
+        </test>
+  </tests>
+
+  
+  
 	<help>
 
 .. class:: infomark
 
-**Authors** Manon Martin (manon.martin@uclouvain.be)
+**Authors** Manon Martin (manon.martin@uclouvain.be) and Marie Tremblay-Franco (marie.tremblay-franco@inra.fr; Galaxy integration)
 
 .. class:: infomark
-
-**Please cite**
-R. Rousseau. Statistical contribution to the analysis of metabonomic data in 1H-NMR spectroscopy. 2011. Ph.D. Thesis
 
 
 =============
@@ -104,23 +106,25 @@ NA                        NA                NA
 +---------------------------+----------------------+--------+
 | Name                      | Output file          | Format |
 +===========================+======================+========+
-|NMR_PreProcessing          | dataMatrix.tsv       | Tabular|
+|NMR_PreProcessing          | dataMatrix           | Tabular|
 +---------------------------+----------------------+--------+
-|                           | sampleMetadata.tsv   | Tabular|
+|                           | log                  | Tabular|
 +---------------------------+----------------------+--------+
-|                           | variableMetadata.tsv | Tabular|
+|                           | variableMetadata     | Tabular|
 +---------------------------+----------------------+--------+
-|NMR_Alignement             | dataMatrix.tsv       | Tabular|
+|                           | graph                | PDF    |
 +---------------------------+----------------------+--------+
-|NMR_Bucketing              | dataMatrix.tsv       | Tabular|
+|NMR_Alignement             | dataMatrix           | Tabular|
 +---------------------------+----------------------+--------+
-|Normalization              | dataMatrix.tsv       | Tabular|
+|NMR_Bucketing              | dataMatrix           | Tabular|
 +---------------------------+----------------------+--------+
-|Univariate                 | variableMetadata.tsv | Tabular|
+|Normalization              | dataMatrix           | Tabular|
 +---------------------------+----------------------+--------+
-|Multivariate               | sampleMetadata.tsv   | Tabular|
+|Univariate                 | variableMetadata     | Tabular|
 +---------------------------+----------------------+--------+
-|                           | variableMetadata.tsv | Tabular|
+|Multivariate               | sampleMetadata       | Tabular|
++---------------------------+----------------------+--------+
+|                           | variableMetadata     | Tabular|
 +---------------------------+----------------------+--------+
 
 
@@ -131,15 +135,13 @@ Input files
 +---------------------------+-----------------+
 | Parameter : num + label   |   Format        |
 +===========================+=================+
-| 1 : Choose your inputs    |   FID           |
+| 1 : Choose your inputs    |   Raw Bruker    |
 +---------------------------+-----------------+
-| 1 : Choose your inputs    |   Jcamp-dx      |
-+---------------------------+-----------------+
+
 
 **Choose your inputs**
 
     | Zip file (recommended) of FID Bruker files: you can put a zip file containing your FID Bruker files: myinputs.zip (containing all your conditions as sub-directories).
-    | Zip file (recommended) of Jcamp-dx files: you can put a zip file containing your Jcamp-dx files: myinputs.zip (containing all your conditions as sub-directories).
 
 
 ----------
@@ -154,41 +156,50 @@ subdirectories
 	| Organization of individual's files
 	| TRUE: will search inside subdirectories for FIDs and will merge them to have unique FID and info matrices.
 	|
-
+	
+dirs_names
+	| Use the (sub)directories names as FID names?
+	|
+	
+	
 ------------
 Output files
 ------------
 
-dataMatrixOut.tsv
+NMR_Read_dataMatrix
 	| tabular output
-	| Data matrix with n rows (samples) and p columns (time) containing the raw FIDs
+	| Data matrix with n rows (samples) and p columns (time) containing the raw FIDs.
 	|
 
-sampleOut.pdf
+NMR_Read_sampleMetadata
 	| tabular output
-	| Data matrix with n rows (samples) containing the acquisition parameters
-
-logOut.tsv
+	| Data matrix with n rows (samples) containing the acquisition parameters for each sample.
+	|
+	
+NMR_Read_log
 	| Text output
 	| Contains warnings
-	|
----------------------------------------------------
 
----------------
-Example
----------------
+	
+NMR_Read_graph
+	| pdf output
+	| line plots of FID
+	|
 
 
    </help>
-
+   
+   
    <citations>
-        <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
-   author = {R. Rousseau},
-   title = {Statistical contribution to the analysis of metabonomic data in 1H-NMR spectroscopy},
-   journal = {Ph.D. Thesis},
-   year = {2011}
-        }</citation>
-        <citation type="doi">10.1093/bioinformatics/btu813</citation>
-    </citations>
-    
+     
+     <citation type="bibtex">@PhDThesis{Rousseau2011,
+      title = {Statistical contribution to the analysis of metabonomics data in $^1$H NMR spectroscopy.},
+      author = {Rousseau, R.},
+      school = {Institut de Statistique, Biostatistique et Sciences Actuarielles, Universit{\'e} catholique de Louvain},
+      year = {2011}}
+      </citation>
+      
+   </citations> 
+   
+   
 </tool>
